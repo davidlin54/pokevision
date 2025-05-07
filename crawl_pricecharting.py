@@ -1,4 +1,5 @@
 import requests
+from database_manager import *
 from bs4 import BeautifulSoup
 from set import Set
 from item import Item
@@ -31,9 +32,8 @@ def get_all_sets() -> list[Set]:
 	else:
 	    raise Exception("Target div not found.")
 
-def get_items_from_set(url: str) -> list[str]:
-	print(url)
-	response = get_post_response(url)
+def get_items_from_set(set: Set) -> list[str]:
+	response = get_post_response(set.url)
 
 	soup = BeautifulSoup(response, 'html.parser')
 	target_table = soup.find('table', class_='hoverable-rows', id='games_table').find('tbody')
@@ -52,9 +52,12 @@ def get_items_from_set(url: str) -> list[str]:
 	else:
 	    raise Exception("Target table not found. " + url)
 
+drop_all()
+create_db()
+create_set_table()
+create_item_table()
 sets = get_all_sets()
-
-for set in sets:
-	items = get_items_from_set(set.url)
-	for item in items:
-		print(item.url)
+for id, set in enumerate(sets, 1):
+	insert_set(set)
+	items = get_items_from_set(set)
+	insert_items(id, items)
