@@ -1,5 +1,6 @@
 import requests
 from database_manager import *
+from filesystem_manager import *
 from bs4 import BeautifulSoup
 from set import Set
 from item import Item
@@ -64,12 +65,27 @@ def get_items_from_set(set: Set) -> list[str]:
 	else:
 		raise Exception("Target table not found. " + url)
 
-drop_all()
-create_db()
-create_set_table()
-create_item_table()
-sets = get_all_sets()
-for set in sets:
-	insert_set(set)
-	items = get_items_from_set(set)
-	insert_items(items)
+def get_ebay_links_from_item(item: Item) -> list[str]:
+	response = get_post_response(item.url)
+
+	soup = BeautifulSoup(response, 'html.parser')
+	ebay_elements = soup.find_all('a', target='_blank', class_='js-ebay-completed-sale')
+
+	result = []
+	for ebay_element in ebay_elements:
+		result.append(ebay_element.get('href'))
+
+	return result
+
+# drop_all()
+# create_db()
+# create_set_table()
+# create_item_table()
+# sets = get_all_sets()
+# for set in sets:
+# 	insert_set(set)
+# 	items = get_items_from_set(set)
+# 	insert_items(items)
+
+for item in get_items_from_db():
+	create_dir_for_item(item)

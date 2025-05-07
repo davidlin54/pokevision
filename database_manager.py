@@ -96,13 +96,30 @@ def insert_items(items: list[Item]):
 	cursor.close()
 	connector.close()
 
-def get_items(set_id: int=None) -> list[Item]:
+def get_sets_from_db() -> list[Set]:
+	connector = get_connector(db_name)
+	cursor = connector.cursor()
+
+	cursor.execute(
+		"SELECT id, name, url " + 
+		"FROM " + set_table)
+
+	sets = []
+	for (id, name, url) in cursor:
+		sets.append(Set(id, name, url))	
+
+	cursor.close()
+	connector.close()
+
+	return sets
+
+def get_items_from_db(s_id: str=None) -> list[Item]:
 	connector = get_connector(db_name)
 	cursor = connector.cursor()
 
 	cursor.execute(
 		"SELECT id, name, url, set_id " + 
-		"FROM " + item_table + ("" if set_id is None else " where set_id=" + set_id))
+		"FROM " + item_table + ("" if s_id is None else " where set_id=" + str(s_id)))
 
 	items = []
 	for (id, name, url, set_id) in cursor:
