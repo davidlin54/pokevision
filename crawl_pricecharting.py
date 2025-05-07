@@ -24,7 +24,7 @@ def get_all_sets() -> list[Set]:
 	    result = []
 
 	    for li in list_items:
-	    	result.append(Set(strip(li.get_text()), base_url + li.find('a').get('href')))
+	    	result.append(Set(li.get_text().strip(), base_url + li.find('a').get('href')))
 
 	    return result
 
@@ -46,7 +46,7 @@ def get_items_from_set(url: str) -> list[str]:
 		for row in table_rows:
 			id = row.get('data-product')
 			data = row.find('td', class_='title')
-			result.append(Item(id, strip(data.get_text()), base_url + data.find('a').get('href')))
+			result.append(Item(id, data.get_text().strip(), base_url + data.find('a').get('href')))
 
 		return result
 	else:
@@ -57,4 +57,4 @@ sets = get_all_sets()
 for set in sets:
 	items = get_items_from_set(set.url)
 	for item in items:
-		print(item.name)
+		print(item.url)
