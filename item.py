@@ -1,5 +1,5 @@
 class Item:
-	def __init__(self, id: str, name: str, url: str, set_id: int):
+	def __init__(self, id: int, name: str, url: str, set_id: int):
 		self.id = id
 		self.name = name
 		self.url = url

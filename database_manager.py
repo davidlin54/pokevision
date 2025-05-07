@@ -3,10 +3,12 @@ import dotenv
 import os
 from set import Set
 from item import Item
+from item_details import ItemDetails
 
 db_name = "pokevision"
 set_table = "sets"
 item_table = "items"
+item_details_table = "item_details"
 
 def get_connector(database: str=None):
 	dotenv.load_dotenv()
@@ -57,7 +59,7 @@ def create_set_table():
 
 	cursor.execute(
 		"CREATE TABLE " + set_table +
-		" (id int NOT NULL AUTO_INCREMENT, name VARCHAR(255) NOT NULL, url VARCHAR(255) NOT NULL, " +
+		" (id INT NOT NULL AUTO_INCREMENT, name VARCHAR(255) NOT NULL, url VARCHAR(255) NOT NULL, " +
 		"PRIMARY KEY (id))")
 	cursor.close()
 	connector.close()
@@ -68,9 +70,30 @@ def create_item_table():
 
 	cursor.execute(
 		"CREATE TABLE " + item_table + 
-		" (id varchar(20) NOT NULL, name VARCHAR(255) NOT NULL, url VARCHAR(255) NOT NULL, set_id int NOT NULL, " +
+		" (id INT NOT NULL, name VARCHAR(255) NOT NULL, url VARCHAR(255) NOT NULL, set_id INT NOT NULL, " +
 		"PRIMARY KEY (id), " +
 		"FOREIGN KEY (set_id) REFERENCES " + set_table + "(id))")
+	connector.close()
+
+def create_item_details_table():
+	connector = get_connector(db_name)
+	cursor = connector.cursor()
+
+	cursor.execute(
+		"CREATE TABLE " + item_details_table + 
+		" (item_id INT NOT NULL, ungraded_price DECIMAL(10, 2), " +
+		"psa_1_pop INT, psa_1_price DECIMAL(10, 2), " +
+		"psa_2_pop INT, psa_2_price DECIMAL(10, 2), " +
+		"psa_3_pop INT, psa_3_price DECIMAL(10, 2), " +
+		"psa_4_pop INT, psa_4_price DECIMAL(10, 2), " +
+		"psa_5_pop INT, psa_5_price DECIMAL(10, 2), " +
+		"psa_6_pop INT, psa_6_price DECIMAL(10, 2), " +
+		"psa_7_pop INT, psa_7_price DECIMAL(10, 2), " +
+		"psa_8_pop INT, psa_8_price DECIMAL(10, 2), " +
+		"psa_9_pop INT, psa_9_price DECIMAL(10, 2), " +
+		"psa_10_pop INT, psa_10_price DECIMAL(10, 2), " +
+		"PRIMARY KEY (item_id), " +
+		"FOREIGN KEY (item_id) REFERENCES " + item_table + "(id))")
 	connector.close()
 
 def insert_set(set: Set):
@@ -92,6 +115,39 @@ def insert_items(items: list[Item]):
 		cursor.execute(
 			"INSERT INTO " + item_table + " (id, name, url, set_id) "
 			"VALUES (%s, %s, %s, %s)", (item.id, item.name, item.url, item.set_id,))
+	connector.commit()
+	cursor.close()
+	connector.close()
+
+def insert_item_details(items_details: list[ItemDetails]):
+	connector = get_connector(db_name)
+	cursor = connector.cursor()
+
+	for item_details in items_details:
+		cursor.execute(
+			"INSERT INTO " + item_details_table + " (item_id, ungraded_price, " +
+			"psa_1_pop, psa_1_price, " +
+			"psa_2_pop, psa_2_price, " +
+			"psa_3_pop, psa_3_price, " +
+			"psa_4_pop, psa_4_price, " +
+			"psa_5_pop, psa_5_price, " +
+			"psa_6_pop, psa_6_price, " +
+			"psa_7_pop, psa_7_price, " +
+			"psa_8_pop, psa_8_price, " +
+			"psa_9_pop, psa_9_price, " +
+			"psa_10_pop, psa_10_price)" +
+			"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 
+			(item_details.item_id, item_details.ungraded_price,
+				item_details.psa_1_pop, item_details.psa_1_price,
+				item_details.psa_2_pop, item_details.psa_2_price,
+				item_details.psa_3_pop, item_details.psa_3_price,
+				item_details.psa_4_pop, item_details.psa_4_price,
+				item_details.psa_5_pop, item_details.psa_5_price,
+				item_details.psa_6_pop, item_details.psa_6_price,
+				item_details.psa_7_pop, item_details.psa_7_price,
+				item_details.psa_8_pop, item_details.psa_8_price,
+				item_details.psa_9_pop, item_details.psa_9_price,
+				item_details.psa_10_pop, item_details.psa_10_price,))
 	connector.commit()
 	cursor.close()
 	connector.close()
