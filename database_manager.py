@@ -34,6 +34,7 @@ def create_db():
 	connector = get_connector()
 	cursor = connector.cursor()
 	cursor.execute("CREATE DATABASE " + db_name)
+	cursor.close()
 	connector.close()
 
 def drop_all():
@@ -41,7 +42,13 @@ def drop_all():
 	cursor = connector.cursor()
 
 	# drop db
-	cursor.execute("DROP DATABASE " + db_name)
+	try:
+		cursor.execute("DROP DATABASE " + db_name)
+	except:
+		print("Error dropping db")
+
+	cursor.close()
+	connector.close()
 
 
 def create_set_table():
@@ -52,6 +59,7 @@ def create_set_table():
 		"CREATE TABLE " + set_table +
 		" (id int NOT NULL AUTO_INCREMENT, name VARCHAR(255) NOT NULL, url VARCHAR(255) NOT NULL, " +
 		"PRIMARY KEY (id))")
+	cursor.close()
 	connector.close()
 
 def create_item_table():
@@ -73,15 +81,34 @@ def insert_set(set: Set):
 		"INSERT INTO " + set_table + " (name, url) "
 		"VALUES (%s, %s)", (set.name, set.url,))
 	connector.commit()
+	cursor.close()
 	connector.close()
 
-def insert_items(set_id: int, items: list[Item]):
+def insert_items(items: list[Item]):
 	connector = get_connector(db_name)
 	cursor = connector.cursor()
 
 	for item in items:
 		cursor.execute(
 			"INSERT INTO " + item_table + " (id, name, url, set_id) "
-			"VALUES (%s, %s, %s, %s)", (item.id, item.name, item.url, set_id,))
+			"VALUES (%s, %s, %s, %s)", (item.id, item.name, item.url, item.set_id,))
 	connector.commit()
+	cursor.close()
 	connector.close()
+
+def get_items(set_id: int=None) -> list[Item]:
+	connector = get_connector(db_name)
+	cursor = connector.cursor()
+
+	cursor.execute(
+		"SELECT id, name, url, set_id " + 
+		"FROM " + item_table + ("" if set_id is None else " where set_id=" + set_id))
+
+	items = []
+	for (id, name, url, set_id) in cursor:
+		items.append(Item(id, name, url, set_id))	
+
+	cursor.close()
+	connector.close()
+
+	return items

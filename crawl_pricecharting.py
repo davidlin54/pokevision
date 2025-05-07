@@ -17,20 +17,32 @@ def get_all_sets() -> list[Set]:
 	base_response = get_post_response(base_url + category_path)
 	soup = BeautifulSoup(base_response, 'html.parser')
 
+	result = []
+	count = 1
+
 	target_div = soup.find('div', class_='home-box all', style='margin-top: 0px;')
-
 	if target_div:
-	    list_items = target_div.find_all('li')
+		list_items = target_div.find_all('li')
 
-	    result = []
-
-	    for li in list_items:
-	    	result.append(Set(li.get_text().strip(), base_url + li.find('a').get('href')))
-
-	    return result
-
+		for li in list_items:
+			result.append(Set(count, li.get_text().strip(), base_url + li.find('a').get('href')))
+			count+=1
 	else:
-	    raise Exception("Target div not found.")
+		raise Exception("Target div not found.")
+
+
+	target_div = soup.find('div', class_='home-box', style='margin-top: 10px;')
+	if target_div:
+		list_items = target_div.find('ul', class_='newest').find_all('li')
+
+		for li in list_items:
+			result.append(Set(count, li.find('a').get_text().strip(), base_url + li.find('a').get('href')))
+			count+=1
+	else:
+		raise Exception("Target div not found.")
+
+	return result
+
 
 def get_items_from_set(set: Set) -> list[str]:
 	response = get_post_response(set.url)
@@ -46,18 +58,18 @@ def get_items_from_set(set: Set) -> list[str]:
 		for row in table_rows:
 			id = row.get('data-product')
 			data = row.find('td', class_='title')
-			result.append(Item(id, data.get_text().strip(), base_url + data.find('a').get('href')))
+			result.append(Item(id, data.get_text().strip(), base_url + data.find('a').get('href'), set.id))
 
 		return result
 	else:
-	    raise Exception("Target table not found. " + url)
+		raise Exception("Target table not found. " + url)
 
 drop_all()
 create_db()
 create_set_table()
 create_item_table()
 sets = get_all_sets()
-for id, set in enumerate(sets, 1):
+for set in sets:
 	insert_set(set)
 	items = get_items_from_set(set)
-	insert_items(id, items)
+	insert_items(items)
