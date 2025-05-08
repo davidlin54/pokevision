@@ -45,8 +45,8 @@ def get_all_sets() -> list[Set]:
 	return result
 
 
-def get_items_from_set(set: Set) -> list[str]:
-	response = get_post_response(set.url)
+def get_items_from_set(set: Set, cursor: int=None) -> list[str]:
+	response = get_post_response(set.url + ('' if cursor is None else '?cursor=' + str(cursor)))
 
 	soup = BeautifulSoup(response, 'html.parser')
 	target_table = soup.find('table', class_='hoverable-rows', id='games_table').find('tbody')
@@ -61,6 +61,8 @@ def get_items_from_set(set: Set) -> list[str]:
 			data = row.find('td', class_='title')
 			result.append(Item(int(id), data.get_text().strip(), base_url + data.find('a').get('href'), set.id))
 
+		if table_rows:
+			result.extend(get_items_from_set(set, 50 if cursor is None else cursor + 50))
 		return result
 	else:
 		raise Exception("Target table not found. " + url)
@@ -140,6 +142,39 @@ def get_ebay_links_from_item(item: Item) -> list[str]:
 
 	result = []
 	for ebay_element in ebay_elements:
-		result.append(ebay_element.get('href'))
+		ebay_url = ebay_element.get('href').split('?')[0]
+		result.append(ebay_url)
 
 	return result
+
+def get_image_urls_from_item(item: Item) -> list[str]:
+	response = get_post_response(item.url)
+
+	soup = BeautifulSoup(response, 'html.parser')
+	extra_images = soup.find('div', id='extra-images')
+
+	result = []
+	all_images = extra_images.find_all('a')
+	for image in all_images:
+		result.append(image.get('href'))
+
+	return result
+
+def get_image_url_from_ebay(ebay_url: str) -> str:
+	response = get_post_response(ebay_url)
+
+	soup = BeautifulSoup(response, 'html.parser')
+
+	image = soup.find('img', loading='eager', fetchpriority='high')
+	if image:
+		return image.get('data-zoom-src')
+	else:
+		return None
+
+def fetch_image_from_url(image_url: str) -> bytes:
+	response = requests.get(image_url)
+
+	if response.status_code == 200:
+		return response.content
+	else:
+		print(f"Failed to download image. Status code: {response.status_code}")
