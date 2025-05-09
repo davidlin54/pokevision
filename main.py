@@ -32,30 +32,58 @@ def insert_item_details_into_db():
 
 	insert_item_details(items_details)
 
-# for set in range(1, 10):
-# 	items = get_items_from_db(set)
-# 	for item in tqdm(items, desc="processing set: "+ str(set), unit="item"):
-# 		pc_image_urls = get_image_urls_from_item(item)
+# setup_training_directories()
+for set in range(10, 305):
+	items = get_items_from_db(set)
+	num = 1
+	for item in tqdm(items, desc="processing set: "+ str(set), unit="item"):
+		if set == 10:
+			num+=1
+			if num < 180:
+				continue
+			else:
+				for url in get_ebay_links_from_item(item):
+					try:
+						image_url = get_image_url_from_ebay(url)
 
-# 		for image_url in pc_image_urls:
-# 			content = fetch_image_from_url(image_url)
+						if image_url:
+							content = fetch_image_from_url(image_url)
 
-# 			pc_image_id = image_url.split('/')[-2]
-# 			extension = image_url.split('.')[-1]
+							ebay_id = url.split('/')[-1]
+							extension = image_url.split('.')[-1]
 
-# 			file_path = get_dir_for_item(item) + pc_image_id + '.' + extension
-# 			save_image_to_file(content, file_path)
+							file_path = get_dir_for_item(item) + ebay_id + '.' + extension
+							save_image_to_file(content, file_path)
+					except:
+						print("failed to download " + image_url)
+		else:
+			pc_image_urls = get_image_urls_from_item(item)
 
-# 		for url in get_ebay_links_from_item(item):
-# 			image_url = get_image_url_from_ebay(url)
+			for image_url in pc_image_urls:
+				try:
+					content = fetch_image_from_url(image_url)
 
-# 			if image_url:
-# 				content = fetch_image_from_url(image_url)
+					pc_image_id = image_url.split('/')[-2]
+					extension = image_url.split('.')[-1]
 
-# 				ebay_id = url.split('/')[-1]
-# 				extension = image_url.split('.')[-1]
+					file_path = get_dir_for_item(item) + pc_image_id + '.' + extension
+					save_image_to_file(content, file_path)
+				except:
+					print("failed to download " + image_url)
 
-# 				file_path = get_dir_for_item(item) + ebay_id + '.' + extension
-# 				save_image_to_file(content, file_path)
+			for url in get_ebay_links_from_item(item):
+				try:
+					image_url = get_image_url_from_ebay(url)
 
-setup_database()
+					if image_url:
+						content = fetch_image_from_url(image_url)
+
+						ebay_id = url.split('/')[-1]
+						extension = image_url.split('.')[-1]
+
+						file_path = get_dir_for_item(item) + ebay_id + '.' + extension
+						save_image_to_file(content, file_path)
+				except:
+					print("failed to download " + image_url)
+
+# insert_item_details_into_db()

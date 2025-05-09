@@ -63,7 +63,7 @@ def get_items_from_set(set: Set, cursor: int=None) -> list[str]:
 
 		if table_rows:
 			result.extend(get_items_from_set(set, 50 if cursor is None else cursor + 50))
-		return result
+		return list(dict.fromkeys(result))
 	else:
 		raise Exception("Target table not found. " + url)
 
@@ -165,11 +165,19 @@ def get_image_url_from_ebay(ebay_url: str) -> str:
 
 	soup = BeautifulSoup(response, 'html.parser')
 
-	image = soup.find('img', loading='eager', fetchpriority='high')
-	if image:
-		return image.get('data-zoom-src')
-	else:
-		return None
+	# high def images
+	# div = soup.find('div', class_='ux-image-carousel-container image-container')
+	# if div:
+	# 	image = div.find('img', loading='eager', fetchpriority='high')
+	# 	if image:
+	# 		return image.get('data-zoom-src')
+
+	# low def images
+	button = soup.find('button', class_='ux-image-grid-item image-treatment rounded-edges active')
+	if button:
+		image = button.find('img')
+		if image:
+			return image.get('src')
 
 def fetch_image_from_url(image_url: str) -> bytes:
 	response = requests.get(image_url)
