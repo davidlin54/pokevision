@@ -142,7 +142,7 @@ def get_ebay_links_from_item(item: Item) -> list[str]:
 
 	result = []
 	for ebay_element in ebay_elements:
-		ebay_url = ebay_element.get('href').split('?')[0]
+		ebay_url = ebay_element.get('href').split('?')[0].replace('com', 'ca', 1)
 		result.append(ebay_url)
 
 	return result

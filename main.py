@@ -1,8 +1,9 @@
 from crawl_pricecharting import *
 from database_manager import *
 from filesystem_manager import *
-from tqdm import tqdm
-from playwright.sync_api import sync_playwright
+from tqdm.asyncio import tqdm as tqdm_async
+from tqdm import tqdm as tqdm
+import asyncio
 
 def setup_database():
 	drop_all()
@@ -32,58 +33,51 @@ def insert_item_details_into_db():
 
 	insert_item_details(items_details)
 
-# setup_training_directories()
-for set in range(10, 305):
-	items = get_items_from_db(set)
-	num = 1
-	for item in tqdm(items, desc="processing set: "+ str(set), unit="item"):
-		if set == 10:
-			num+=1
-			if num < 180:
-				continue
-			else:
-				for url in get_ebay_links_from_item(item):
-					try:
-						image_url = get_image_url_from_ebay(url)
+def download_item_images_and_save(item: Item):
+	pc_image_urls = get_image_urls_from_item(item)
 
-						if image_url:
-							content = fetch_image_from_url(image_url)
+	for image_url in pc_image_urls:
+		try:
+			content = fetch_image_from_url(image_url)
 
-							ebay_id = url.split('/')[-1]
-							extension = image_url.split('.')[-1]
+			pc_image_id = image_url.split('/')[-2]
+			extension = image_url.split('.')[-1]
 
-							file_path = get_dir_for_item(item) + ebay_id + '.' + extension
-							save_image_to_file(content, file_path)
-					except:
-						print("failed to download " + image_url)
-		else:
-			pc_image_urls = get_image_urls_from_item(item)
+			file_path = get_dir_for_item(item) + pc_image_id + '.' + extension
+			save_image_to_file(content, file_path)
+		except:
+			print("failed to download " + str(image_url))
 
-			for image_url in pc_image_urls:
-				try:
-					content = fetch_image_from_url(image_url)
+	for url in get_ebay_links_from_item(item):
+		try:
+			image_url = get_image_url_from_ebay(url)
 
-					pc_image_id = image_url.split('/')[-2]
-					extension = image_url.split('.')[-1]
+			if image_url:
+				content = fetch_image_from_url(image_url)
 
-					file_path = get_dir_for_item(item) + pc_image_id + '.' + extension
-					save_image_to_file(content, file_path)
-				except:
-					print("failed to download " + image_url)
+				ebay_id = url.split('/')[-1]
+				extension = image_url.split('.')[-1]
 
-			for url in get_ebay_links_from_item(item):
-				try:
-					image_url = get_image_url_from_ebay(url)
+				file_path = get_dir_for_item(item) + ebay_id + '.' + extension
+				save_image_to_file(content, file_path)
+		except:
+			print("failed to download " + str(image_url))
 
-					if image_url:
-						content = fetch_image_from_url(image_url)
 
-						ebay_id = url.split('/')[-1]
-						extension = image_url.split('.')[-1]
+async def download_images_and_save(start_set: int):
+	for set in range(start_set, 305):
+		items = get_items_from_db(set)
 
-						file_path = get_dir_for_item(item) + ebay_id + '.' + extension
-						save_image_to_file(content, file_path)
-				except:
-					print("failed to download " + image_url)
+		tasks = [asyncio.to_thread(download_item_images_and_save, item) for item in items]
+
+		print('working on set: ' + str(set))
+		with tqdm_async(total=len(tasks)) as progress_bar:
+			for coro in asyncio.as_completed(tasks):
+				await coro
+				progress_bar.update(1)
 
 # insert_item_details_into_db()
+# setup_training_directories()
+asyncio.run(download_images_and_save(65))
+
+# print(get_image_url_from_ebay('https://www.ebay.com/itm/156892139652'))
