@@ -5,3 +5,5 @@ dotenv
 pathlib
 tqdm
 asyncio
+torch
+torchvision

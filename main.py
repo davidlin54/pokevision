@@ -1,4 +1,4 @@
-from crawl_pricecharting import *
+from request_manager import *
 from database_manager import *
 from filesystem_manager import *
 from tqdm.asyncio import tqdm as tqdm_async
@@ -78,6 +78,6 @@ async def download_images_and_save(start_set: int):
 
 # insert_item_details_into_db()
 # setup_training_directories()
-asyncio.run(download_images_and_save(65))
+asyncio.run(download_images_and_save(228))
 
 # print(get_image_url_from_ebay('https://www.ebay.com/itm/156892139652'))
