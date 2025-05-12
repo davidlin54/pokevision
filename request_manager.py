@@ -8,9 +8,11 @@ from item_details import ItemDetails
 base_url = 'https://www.pricecharting.com'
 category_path = '/category/pokemon-cards'
 headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
+max_retry = 5
+timeout_sec = 10
 
-def get_post_response(url: str):
-	response = requests.post(url, headers=headers)
+def get_post_response(url: str, timeout: int=1000):
+	response = requests.post(url, headers=headers, timeout=timeout)
 	body = response.text
 	return body
 
@@ -135,54 +137,75 @@ def get_item_details_from_item(item : Item) -> ItemDetails:
 	return details
 
 def get_ebay_links_from_item(item: Item) -> list[str]:
-	response = get_post_response(item.url)
+	for attempt in range(1, max_retry):
+		try:
+			response = get_post_response(item.url, timeout_sec)
 
-	soup = BeautifulSoup(response, 'html.parser')
-	ebay_elements = soup.find_all('a', target='_blank', class_='js-ebay-completed-sale')
+			soup = BeautifulSoup(response, 'html.parser')
+			ebay_elements = soup.find_all('a', target='_blank', class_='js-ebay-completed-sale')
 
-	result = []
-	for ebay_element in ebay_elements:
-		ebay_url = ebay_element.get('href').split('?')[0].replace('com', 'ca', 1)
-		result.append(ebay_url)
+			result = []
+			for ebay_element in ebay_elements:
+				ebay_url = ebay_element.get('href').split('?')[0].replace('com', 'ca', 1)
+				result.append(ebay_url)
 
-	return result
+			return result
+		except:
+			print('retry number ' + str(attempt) + ' for ebay links for item: ' + str(item.id))
+
+	return []
+
 
 def get_image_urls_from_item(item: Item) -> list[str]:
-	response = get_post_response(item.url)
+	for attempt in range(1, max_retry):
+		try:
+			response = get_post_response(item.url, timeout_sec)
 
-	soup = BeautifulSoup(response, 'html.parser')
-	extra_images = soup.find('div', id='extra-images')
+			soup = BeautifulSoup(response, 'html.parser')
+			extra_images = soup.find('div', id='extra-images')
 
-	result = []
-	all_images = extra_images.find_all('a')
-	for image in all_images:
-		result.append(image.get('href'))
+			result = []
+			all_images = extra_images.find_all('a')
+			for image in all_images:
+				result.append(image.get('href'))
 
-	return result
+			return result
+		except:
+			print('retry number ' + str(attempt) + ' for ebay image urls for item: ' + str(item.id))
+
+	return []
 
 def get_image_url_from_ebay(ebay_url: str) -> str:
-	response = get_post_response(ebay_url)
+	for attempt in range(1, max_retry):
+		try:
+			response = get_post_response(ebay_url, timeout_sec)
 
-	soup = BeautifulSoup(response, 'html.parser')
+			soup = BeautifulSoup(response, 'html.parser')
 
-	# high def images
-	# div = soup.find('div', class_='ux-image-carousel-container image-container')
-	# if div:
-	# 	image = div.find('img', loading='eager', fetchpriority='high')
-	# 	if image:
-	# 		return image.get('data-zoom-src')
+			# high def images
+			# div = soup.find('div', class_='ux-image-carousel-container image-container')
+			# if div:
+			# 	image = div.find('img', loading='eager', fetchpriority='high')
+			# 	if image:
+			# 		return image.get('data-zoom-src')
 
-	# low def images
-	button = soup.find('button', class_='ux-image-grid-item image-treatment rounded-edges active')
-	if button:
-		image = button.find('img')
-		if image:
-			return image.get('src')
+			# low def images
+			button = soup.find('button', class_='ux-image-grid-item image-treatment rounded-edges active')
+			if button:
+				image = button.find('img')
+				if image:
+					return image.get('src')
+		except:
+			print('retry number ' + str(attempt) + ' for image url from ebay url: ' + ebay_url)
 
 def fetch_image_from_url(image_url: str) -> bytes:
-	response = requests.get(image_url)
+	for attempt in range(1, max_retry):
+		try:
+			response = requests.get(image_url, timeout=timeout_sec)
 
-	if response.status_code == 200:
-		return response.content
-	else:
-		print(f"Failed to download image. Status code: {response.status_code}")
+			if response.status_code == 200:
+				return response.content
+			else:
+				print(f"Failed to download image. Status code: {response.status_code}")
+		except:
+			print('retry number ' + str(attempt) + ' for downloading image: ' + image_url)

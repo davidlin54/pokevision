@@ -74,7 +74,6 @@ with torch.no_grad():
     for imgs, labels in val_loader:
         imgs, labels = imgs.to(device), labels.to(device)
         outputs = model(imgs)
-        print(outputs)
         _, preds = torch.max(outputs, 1)
         val_correct += (preds == labels).sum().item()
         val_total += labels.size(0)

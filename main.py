@@ -78,6 +78,6 @@ async def download_images_and_save(start_set: int):
 
 # insert_item_details_into_db()
 # setup_training_directories()
-asyncio.run(download_images_and_save(228))
+asyncio.run(download_images_and_save(254))
 
 # print(get_image_url_from_ebay('https://www.ebay.com/itm/156892139652'))
