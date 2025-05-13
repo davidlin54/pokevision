@@ -8,7 +8,7 @@ from vision_model import PokemonClassifier
 from safe_image_folder import SafeImageFolder
 
 # === Config ===
-num_classes = 254
+num_classes = 55865
 image_size = 224
 batch_size = 32
 epochs = 10
@@ -24,7 +24,7 @@ transform = transforms.Compose([
                          std=[0.229, 0.224, 0.225]),
 ])
 
-full_dataset = SafeImageFolder("test_training", transform=transform)
+full_dataset = SafeImageFolder("training", transform=transform)
 # === Calculate the split sizes ===
 total_size = len(full_dataset)
 eval_size = int(total_size * eval_percentage)

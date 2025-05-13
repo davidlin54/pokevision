@@ -65,7 +65,7 @@ def download_item_images_and_save(item: Item):
 
 
 async def download_images_and_save(start_set: int):
-	for set in range(start_set, 305):
+	for set in range(start_set, 306):
 		items = get_items_from_db(set)
 
 		tasks = [asyncio.to_thread(download_item_images_and_save, item) for item in items]
@@ -78,6 +78,6 @@ async def download_images_and_save(start_set: int):
 
 # insert_item_details_into_db()
 # setup_training_directories()
-asyncio.run(download_images_and_save(254))
+# asyncio.run(download_images_and_save(305))
 
 # print(get_image_url_from_ebay('https://www.ebay.com/itm/156892139652'))
