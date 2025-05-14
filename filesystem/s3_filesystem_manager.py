@@ -4,7 +4,8 @@ from item import Item
 from filesystem_manager import FilesystemManager
 
 class S3FilesystemManager(FilesystemManager):
-    bucket_name = "your-s3-bucket-name"  # Replace with your actual bucket name
+    dotenv.load_dotenv()
+    bucket_name = os.getenv('s3_bucket_name')
     
     @staticmethod
     def create_dir_for_item(item: Item):
