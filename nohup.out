@@ -1,0 +1,31 @@
+Traceback (most recent call last):
+  File "/home/ec2-user/pokevision/update_item_details.py", line 39, in <module>
+    asyncio.run(update_sets_and_items())
+  File "/home/ec2-user/miniconda3/envs/pokevision/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/ec2-user/miniconda3/envs/pokevision/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ec2-user/miniconda3/envs/pokevision/lib/python3.11/asyncio/base_events.py", line 641, in run_until_complete
+    self.run_forever()
+  File "/home/ec2-user/miniconda3/envs/pokevision/lib/python3.11/asyncio/base_events.py", line 608, in run_forever
+    self._run_once()
+  File "/home/ec2-user/miniconda3/envs/pokevision/lib/python3.11/asyncio/base_events.py", line 1936, in _run_once
+    handle._run()
+  File "/home/ec2-user/miniconda3/envs/pokevision/lib/python3.11/asyncio/events.py", line 84, in _run
+    self._context.run(self._callback, *self._args)
+  File "/home/ec2-user/pokevision/update_item_details.py", line 13, in update_sets_and_items
+    insert_set(set)
+  File "/home/ec2-user/pokevision/database_manager.py", line 102, in insert_set
+    cursor.execute(
+  File "/home/ec2-user/miniconda3/envs/pokevision/lib/python3.11/site-packages/mysql/connector/cursor_cext.py", line 356, in execute
+    self._connection.cmd_query(
+  File "/home/ec2-user/miniconda3/envs/pokevision/lib/python3.11/site-packages/mysql/connector/opentelemetry/context_propagation.py", line 97, in wrapper
+    return method(cnx, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ec2-user/miniconda3/envs/pokevision/lib/python3.11/site-packages/mysql/connector/connection_cext.py", line 772, in cmd_query
+    self._cmysql.query(
+  File "/home/ec2-user/miniconda3/envs/pokevision/lib/python3.11/asyncio/runners.py", line 157, in _on_sigint
+    raise KeyboardInterrupt()
+KeyboardInterrupt
