@@ -21,7 +21,7 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
 
             if not filesystem_manager.file_exists(file_path):
                 filesystem_manager.save_image_to_file(content, file_path)
-        except Excecption as e:
+        except Exception as e:
             print("failed to download " + str(image_url) + ". " + e)
 
     for url in get_ebay_links_from_item(item):
@@ -38,7 +38,7 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
                 
                 if not filesystem_manager.file_exists(file_path):
                     filesystem_manager.save_image_to_file(content, file_path)
-        except Excecption as e:
+        except Exception as e:
             print("failed to download " + str(image_url) + ". " + e)
 
 
