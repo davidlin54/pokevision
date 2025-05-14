@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from item import Item
 import importlib
 import dotenv
+import os
 
 class FilesystemManager(ABC):
     @staticmethod
