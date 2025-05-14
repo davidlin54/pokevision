@@ -74,67 +74,72 @@ def strip_price_string(price: str) -> float:
     return 0 if stripped == '' else float(stripped)
 
 def get_item_details_from_item(item : Item) -> ItemDetails:
-    response = get_post_response(item.url)
+    for attempt in range(1, max_retry):
+        try:
+            response = get_post_response(item.url, timeout_sec)
 
-    soup = BeautifulSoup(response, 'html.parser')
-    details = ItemDetails(item_id=item.id)
+            soup = BeautifulSoup(response, 'html.parser')
+            details = ItemDetails(item_id=item.id)
 
-    # find prices
-    target_div = soup.find('div', id='full-prices')
+            # find prices
+            target_div = soup.find('div', id='full-prices')
 
-    if target_div:
-        table = target_div.find('table')
+            if target_div:
+                table = target_div.find('table')
 
-        rows = table.find_all('tr')
+                rows = table.find_all('tr')
 
-        for row in rows:
-            data = row.find_all('td')
-            category = data[0].get_text()
-            price = strip_price_string(data[1].get_text())
+                for row in rows:
+                    data = row.find_all('td')
+                    category = data[0].get_text()
+                    price = strip_price_string(data[1].get_text())
 
-            if category == 'Ungraded':
-                details.ungraded_price = price
-            elif category == 'Grade 1':
-                details.psa_1_price = price
-            elif category == 'Grade 2':
-                details.psa_2_price = price
-            elif category == 'Grade 3':
-                details.psa_3_price = price
-            elif category == 'Grade 4':
-                details.psa_4_price = price
-            elif category == 'Grade 5':
-                details.psa_5_price = price
-            elif category == 'Grade 6':
-                details.psa_6_price = price
-            elif category == 'Grade 7':
-                details.psa_7_price = price
-            elif category == 'Grade 8':
-                details.psa_8_price = price
-            elif category == 'Grade 9':
-                details.psa_9_price = price
-            elif category == 'PSA 10':
-                details.psa_10_price = price
-    else:
-        raise Exception("Price table not found. " + item.url)
+                    if category == 'Ungraded':
+                        details.ungraded_price = price
+                    elif category == 'Grade 1':
+                        details.psa_1_price = price
+                    elif category == 'Grade 2':
+                        details.psa_2_price = price
+                    elif category == 'Grade 3':
+                        details.psa_3_price = price
+                    elif category == 'Grade 4':
+                        details.psa_4_price = price
+                    elif category == 'Grade 5':
+                        details.psa_5_price = price
+                    elif category == 'Grade 6':
+                        details.psa_6_price = price
+                    elif category == 'Grade 7':
+                        details.psa_7_price = price
+                    elif category == 'Grade 8':
+                        details.psa_8_price = price
+                    elif category == 'Grade 9':
+                        details.psa_9_price = price
+                    elif category == 'PSA 10':
+                        details.psa_10_price = price
+            else:
+                raise Exception("Price table not found. " + item.url)
 
-    # find population
-    target_table = soup.find('table', class_='hoverable-rows population')
+            # find population
+            target_table = soup.find('table', class_='hoverable-rows population')
 
-    if target_table:
-        body = target_table.find('tbody')
-        data = body.find('tr').find_all('td')
-        details.psa_1_pop = int(strip_price_string(data[1].get_text()))
-        details.psa_2_pop = int(strip_price_string(data[2].get_text()))
-        details.psa_3_pop = int(strip_price_string(data[3].get_text()))
-        details.psa_4_pop = int(strip_price_string(data[4].get_text()))
-        details.psa_5_pop = int(strip_price_string(data[5].get_text()))
-        details.psa_6_pop = int(strip_price_string(data[6].get_text()))
-        details.psa_7_pop = int(strip_price_string(data[7].get_text()))
-        details.psa_8_pop = int(strip_price_string(data[8].get_text()))
-        details.psa_9_pop = int(strip_price_string(data[9].get_text()))
-        details.psa_10_pop = int(strip_price_string(data[10].get_text()))
+            if target_table:
+                body = target_table.find('tbody')
+                data = body.find('tr').find_all('td')
+                details.psa_1_pop = int(strip_price_string(data[1].get_text()))
+                details.psa_2_pop = int(strip_price_string(data[2].get_text()))
+                details.psa_3_pop = int(strip_price_string(data[3].get_text()))
+                details.psa_4_pop = int(strip_price_string(data[4].get_text()))
+                details.psa_5_pop = int(strip_price_string(data[5].get_text()))
+                details.psa_6_pop = int(strip_price_string(data[6].get_text()))
+                details.psa_7_pop = int(strip_price_string(data[7].get_text()))
+                details.psa_8_pop = int(strip_price_string(data[8].get_text()))
+                details.psa_9_pop = int(strip_price_string(data[9].get_text()))
+                details.psa_10_pop = int(strip_price_string(data[10].get_text()))
 
-    return details
+            return details
+        except: 
+            print('retry number ' + str(attempt) + ' for item: ' + str(item.id))
+    return None
 
 def get_ebay_links_from_item(item: Item) -> list[str]:
     for attempt in range(1, max_retry):

@@ -5,17 +5,24 @@ from tqdm.asyncio import tqdm as tqdm_async
 from tqdm import tqdm as tqdm
 import asyncio
 
-def setup_database():
+async def setup_database():
     drop_all()
     create_db()
     create_set_table()
     create_item_table()
     create_item_details_table()
     sets = get_all_sets()
-    for set in tqdm(sets, desc="processing sets", unit="set"):
+
+    for set in sets:
         insert_set(set)
-        items = get_items_from_set(set)
-        insert_items(items)
+
+    tasks = [asyncio.to_thread(get_items_from_set, set) for set in sets]
+
+    with tqdm_async(total=len(tasks)) as progress_bar:
+        for coro in asyncio.as_completed(tasks):
+            items = await coro
+            insert_items(items)
+            progress_bar.update(1)
 
 def setup_training_directories():
     for item in get_items_from_db():
@@ -76,6 +83,7 @@ async def download_images_and_save(start_set: int):
                 await coro
                 progress_bar.update(1)
 
+asyncio.run(setup_database())
 # insert_item_details_into_db()
 # setup_training_directories()
 # asyncio.run(download_images_and_save(305))
