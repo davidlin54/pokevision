@@ -1,6 +1,7 @@
 import boto3
 from botocore.exceptions import NoCredentialsError
 from item import Item
+from filesystem_manager import FilesystemManager
 
 class S3FilesystemManager(FilesystemManager):
     bucket_name = "your-s3-bucket-name"  # Replace with your actual bucket name

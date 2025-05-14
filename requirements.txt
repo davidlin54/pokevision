@@ -7,3 +7,4 @@ tqdm
 asyncio
 torch
 torchvision
+boto3
