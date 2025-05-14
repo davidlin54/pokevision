@@ -23,7 +23,7 @@ class S3FilesystemManager(FilesystemManager):
 
     @staticmethod
     def get_dir_for_item(item: Item) -> str:
-        return str(item.id)
+        return str(item.id) + '/'
 
     @staticmethod
     def save_image_to_file(content: bytes, file_name: str):
@@ -45,5 +45,4 @@ class S3FilesystemManager(FilesystemManager):
             if e.response['Error']['Code'] == 'NoSuchKey':
                 return False
             else:
-                print(f"Error checking file existence: {str(e)}")
                 return False
