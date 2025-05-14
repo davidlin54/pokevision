@@ -12,3 +12,7 @@ def get_dir_for_item(item: Item) -> str:
 def save_image_to_file(content: bytes, file_name: str):
     with open(file_name, "wb") as f:
         f.write(content)
+
+def file_exists(file_name: str):
+    file_path = Path(file_name)
+    return file_path.exists()

@@ -52,7 +52,6 @@ def drop_all():
     cursor.close()
     connector.close()
 
-
 def create_set_table():
     connector = get_connector(db_name)
     cursor = connector.cursor()
@@ -180,6 +179,21 @@ def get_sets_from_db() -> list[Set]:
     connector.close()
 
     return sets
+
+def get_set_count() -> int:
+    connector = get_connector(db_name)
+    cursor = connector.cursor()
+
+    cursor.execute(
+        "SELECT COUNT(*) as count " + 
+        "FROM " + set_table)
+
+    count = cursor.fetchone()[0]
+
+    cursor.close()
+    connector.close()
+
+    return count
 
 def get_items_from_db(s_id: str=None) -> list[Item]:
     connector = get_connector(db_name)

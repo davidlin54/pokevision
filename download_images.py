@@ -5,41 +5,6 @@ from tqdm.asyncio import tqdm as tqdm_async
 from tqdm import tqdm as tqdm
 import asyncio
 
-async def setup_database():
-    drop_all()
-    create_db()
-    create_set_table()
-    create_item_table()
-    create_item_details_table()
-    sets = get_all_sets()
-
-    for set in sets:
-        insert_set(set)
-
-    tasks = [asyncio.to_thread(get_items_from_set, set) for set in sets]
-
-    with tqdm_async(total=len(tasks)) as progress_bar:
-        for coro in asyncio.as_completed(tasks):
-            items = await coro
-            insert_items(items)
-            progress_bar.update(1)
-
-def setup_training_directories():
-    for item in get_items_from_db():
-        create_dir_for_item(item)
-
-def insert_item_details_into_db():
-    items_details = []
-    for item in tqdm(get_items_from_db(), desc="fetching item details", unit="item"):
-        for i in range(10):
-            try:
-                items_details.append(get_item_details_from_item(item))
-                break
-            except:
-                print('try ' + str(i))
-
-    insert_item_details(items_details)
-
 def download_item_images_and_save(item: Item):
     pc_image_urls = get_image_urls_from_item(item)
 
@@ -51,7 +16,9 @@ def download_item_images_and_save(item: Item):
             extension = image_url.split('.')[-1]
 
             file_path = get_dir_for_item(item) + pc_image_id + '.' + extension
-            save_image_to_file(content, file_path)
+
+            if not file_exists(file_path):
+                save_image_to_file(content, file_path)
         except:
             print("failed to download " + str(image_url))
 
@@ -66,13 +33,15 @@ def download_item_images_and_save(item: Item):
                 extension = image_url.split('.')[-1]
 
                 file_path = get_dir_for_item(item) + ebay_id + '.' + extension
-                save_image_to_file(content, file_path)
+                
+                if not file_exists(file_path):
+                    save_image_to_file(content, file_path)
         except:
             print("failed to download " + str(image_url))
 
 
-async def download_images_and_save(start_set: int):
-    for set in range(start_set, 306):
+async def download_images_and_save(start_set: int=1):
+    for set in range(start_set, get_set_count() + 1):
         items = get_items_from_db(set)
 
         tasks = [asyncio.to_thread(download_item_images_and_save, item) for item in items]
@@ -83,9 +52,6 @@ async def download_images_and_save(start_set: int):
                 await coro
                 progress_bar.update(1)
 
-asyncio.run(setup_database())
-# insert_item_details_into_db()
-# setup_training_directories()
-# asyncio.run(download_images_and_save(305))
+if __name__ == "__main__":
+    asyncio.run(download_images_and_save())
 
-# print(get_image_url_from_ebay('https://www.ebay.com/itm/156892139652'))
