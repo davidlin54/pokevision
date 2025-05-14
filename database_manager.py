@@ -59,7 +59,7 @@ def create_set_table():
 
 	cursor.execute(
 		"CREATE TABLE " + set_table +
-		" (id INT NOT NULL AUTO_INCREMENT, name VARCHAR(255) NOT NULL, url VARCHAR(255) NOT NULL, " +
+		" (id INT NOT NULL AUTO_INCREMENT, name VARCHAR(255) NOT NULL, url VARCHAR(255) NOT NULL UNIQUE, " +
 		"PRIMARY KEY (id))")
 	cursor.close()
 	connector.close()
@@ -101,7 +101,7 @@ def insert_set(set: Set):
 	cursor = connector.cursor()
 
 	cursor.execute(
-		"INSERT INTO " + set_table + " (name, url) "
+		"INSERT IGNORE INTO " + set_table + " (name, url) "
 		"VALUES (%s, %s)", (set.name, set.url,))
 	connector.commit()
 	cursor.close()
@@ -113,7 +113,7 @@ def insert_items(items: list[Item]):
 
 	for item in items:
 		cursor.execute(
-			"INSERT INTO " + item_table + " (id, name, url, set_id) "
+			"INSERT IGNORE INTO " + item_table + " (id, name, url, set_id) "
 			"VALUES (%s, %s, %s, %s)", (item.id, item.name, item.url, item.set_id,))
 	connector.commit()
 	cursor.close()
@@ -136,7 +136,19 @@ def insert_item_details(items_details: list[ItemDetails]):
 			"psa_8_pop, psa_8_price, " +
 			"psa_9_pop, psa_9_price, " +
 			"psa_10_pop, psa_10_price)" +
-			"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", 
+			"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)" +
+			"ON DUPLICATE KEY UPDATE " +
+			"ungraded_price = VALUES(ungraded_price), " +
+			"psa_1_pop = VALUES(psa_1_pop), psa_1_price = VALUES(psa_1_price), " +
+			"psa_2_pop = VALUES(psa_2_pop), psa_2_price = VALUES(psa_2_price), " +
+			"psa_3_pop = VALUES(psa_3_pop), psa_3_price = VALUES(psa_3_price), " +
+			"psa_4_pop = VALUES(psa_4_pop), psa_4_price = VALUES(psa_4_price), " +
+			"psa_5_pop = VALUES(psa_5_pop), psa_5_price = VALUES(psa_5_price), " +
+			"psa_6_pop = VALUES(psa_6_pop), psa_6_price = VALUES(psa_6_price), " +
+			"psa_7_pop = VALUES(psa_7_pop), psa_7_price = VALUES(psa_7_price), " +
+			"psa_8_pop = VALUES(psa_8_pop), psa_8_price = VALUES(psa_8_price), " +
+			"psa_9_pop = VALUES(psa_9_pop), psa_9_price = VALUES(psa_9_price), " +
+			"psa_10_pop = VALUES(psa_10_pop), psa_10_price = VALUES(psa_10_price)",
 			(item_details.item_id, item_details.ungraded_price,
 				item_details.psa_1_pop, item_details.psa_1_price,
 				item_details.psa_2_pop, item_details.psa_2_price,
