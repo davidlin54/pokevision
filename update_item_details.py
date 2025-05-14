@@ -14,7 +14,7 @@ async def update_item_details_into_db():
         for coro in asyncio.as_completed(tasks):
             item_detail = await coro
             with lock:
-                item_details.append(item_detail)
+                items_details.append(item_detail)
             progress_bar.update(1)
 
     insert_item_details(items_details)
