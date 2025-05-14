@@ -18,3 +18,6 @@ async def update_item_details_into_db():
             progress_bar.update(1)
 
     insert_item_details(items_details)
+
+if __name__ == "__main__":
+    asyncio.run(update_item_details_into_db())
