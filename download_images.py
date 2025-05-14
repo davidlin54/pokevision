@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from request_manager import *
 from database_manager import *
 from filesystem_manager import *
