@@ -5,7 +5,7 @@ import threading
 import asyncio
 
 async def update_item_details_into_db():
-    tasks = [asyncio.to_thread(get_item_details_from_item, item) for items in get_items_from_db()]
+    tasks = [asyncio.to_thread(get_item_details_from_item, item) for item in get_items_from_db()]
 
     items_details = []
     lock = threading.Lock()
