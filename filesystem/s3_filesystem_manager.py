@@ -1,7 +1,9 @@
-import boto3
 from botocore.exceptions import NoCredentialsError
 from item import Item
 from filesystem_manager import FilesystemManager
+import boto3
+import dotenv
+import os
 
 class S3FilesystemManager(FilesystemManager):
     dotenv.load_dotenv()
