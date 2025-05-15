@@ -1,5 +1,6 @@
 import os
 import config
+import json
 import sys
 import torch
 import time
@@ -42,16 +43,15 @@ def main(image_path: str):
         end = time.perf_counter()
         total_time = (end - start)
         probabilities = torch.softmax(output, dim=1)
-        top_k = torch.topk(probabilities, k=config.return_k_results, dim=1)
+        top_k_prob, top_k_indices = torch.topk(probabilities, k=config.return_k_results, dim=1)
 
-    train_dataset = SafeImageFolder(config.training_dir, allow_empty=True)
-    class_names = train_dataset.classes
+    with open(config.model_classes, "r") as f:
+        class_names = json.load(f)
 
-    for i in range(5):
-        class_id = top_k.indices[0][i].item()
-        prob = top_k.values[0][i].item()
-        print(f"{i+1}: {class_names[class_id]} ({prob:.4f})")
+    top_k_class_names = [class_names[index.item()] for index in top_k_indices[0]]
+
+    return top_k_class_names, [prob.item() for prob in top_k_prob[0]]
 
 if __name__ == "__main__":
     image_path = sys.argv[1]
-    main(image_path)
+    print(main(image_path))

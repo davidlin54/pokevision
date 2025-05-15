@@ -1,5 +1,6 @@
 import os
 import config
+import json
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -16,6 +17,10 @@ epochs = 20
 learning_rate = 1e-4
 num_workers = 1
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# === Early Stopping Setup ===
+best_val_loss = float('inf')
+patience = 5
+no_improve_epochs=0
 
 def count_subfolders(path) -> int:
     return sum(
@@ -55,11 +60,6 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
 
     torch.set_float32_matmul_precision('high')
-
-    # === Early Stopping Setup ===
-    best_val_loss = float('inf')
-    patience = 5
-    no_improve_epochs = 0
 
     # === Model ===
     model = PokemonClassifier(num_classes=num_classes).to(device)
@@ -133,6 +133,14 @@ def main():
             best_val_loss = val_loss
             no_improve_epochs = 0
             torch.save(model.state_dict(), config.model_checkpoint)
+
+            # === Save model classes for validation matching ===
+            if os.path.exists(config.model_classes):
+                os.remove(config.model_classes)
+
+            with open(config.model_classes, "w") as f:
+                json.dump(train_dataset.classes, f)
+
             print(f"Saved new best model (val loss improved to {val_loss:.4f})")
         else:
             no_improve_epochs += 1
