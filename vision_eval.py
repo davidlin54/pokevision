@@ -15,7 +15,8 @@ from PIL import Image
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def main(image_path: str):
-    num_classes = count_subfolders(config.training_dir)
+    with open(config.model_classes, "r") as f:
+        class_names = json.load(f)
 
     # === Data Loaders ===
     transform = transforms.Compose([
@@ -31,7 +32,7 @@ def main(image_path: str):
     torch.set_float32_matmul_precision('high')
 
     # === Model ===
-    model = PokemonClassifier(num_classes=num_classes).to(device)
+    model = PokemonClassifier(num_classes=len(class_names)).to(device)
 
     # === Load saved state and run inference ===
     model.load_state_dict(torch.load(config.model_checkpoint))
@@ -44,9 +45,6 @@ def main(image_path: str):
         total_time = (end - start)
         probabilities = torch.softmax(output, dim=1)
         top_k_prob, top_k_indices = torch.topk(probabilities, k=config.return_k_results, dim=1)
-
-    with open(config.model_classes, "r") as f:
-        class_names = json.load(f)
 
     top_k_class_names = [class_names[index.item()] for index in top_k_indices[0]]
 
