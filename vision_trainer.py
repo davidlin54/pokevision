@@ -11,13 +11,11 @@ from safe_image_folder import SafeImageFolder
 from tqdm import tqdm
 
 # === Config ===
-image_size = 224
 batch_size = 32
 epochs = 20
 learning_rate = 1e-4
 num_workers = 1
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-saved_model = 'trained_model.pth'
 
 def count_subfolders(path) -> int:
     return sum(
@@ -25,12 +23,26 @@ def count_subfolders(path) -> int:
         for entry in os.listdir(path)
     )
 
+def load_state_dict(model):
+    saved_state_dict = torch.load(config.model_checkpoint)
+    new_state_dict = model.state_dict()
+
+    # Filter out only the matching keys
+    matched_state_dict = {k: v for k, v in saved_state_dict.items() if k in new_state_dict and v.size() == new_state_dict[k].size()}
+
+    # Update the new model's state_dict with matched keys
+    new_state_dict.update(matched_state_dict)
+
+    # Load the updated state_dict into the new model
+    model.load_state_dict(new_state_dict)
+
+
 def main():
     num_classes = count_subfolders(config.training_dir)
 
     # === Data Loaders ===
     transform = transforms.Compose([
-        transforms.Resize((image_size, image_size)),
+        transforms.Resize((config.image_size, config.image_size)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225]),
@@ -58,7 +70,7 @@ def main():
 
     # === Load saved state and run validation for current loss ===
     try:
-        model.load_state_dict(torch.load(saved_model))
+        load_state_dict(model)
 
         model.eval()
         val_loss, val_correct, val_total = 0, 0, 0
@@ -120,7 +132,7 @@ def main():
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             no_improve_epochs = 0
-            torch.save(model.state_dict(), saved_model)
+            torch.save(model.state_dict(), config.model_checkpoint)
             print(f"Saved new best model (val loss improved to {val_loss:.4f})")
         else:
             no_improve_epochs += 1
