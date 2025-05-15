@@ -7,7 +7,7 @@ import os
 class FilesystemManager(ABC):
     @staticmethod
     @abstractmethod
-    def create_dir_for_item(item: Item):
+    def create_dir(path: str):
         pass
 
     @staticmethod

@@ -10,9 +10,9 @@ class S3FilesystemManager(FilesystemManager):
     bucket_name = os.getenv('s3_bucket_name')
     
     @staticmethod
-    def create_dir_for_item(item: Item):
+    def create_dir(path: str):
         s3_client = boto3.client('s3')
-        folder_path = str(item.id)
+        folder_path = path
         try:
             # The folder is created by uploading an empty object with the folder path
             s3_client.put_object(Bucket=S3FilesystemManager.bucket_name, Key=folder_path)
