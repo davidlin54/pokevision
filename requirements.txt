@@ -4,7 +4,6 @@ mysql-connector-python
 dotenv
 pathlib
 tqdm
-asyncio
 torch
 torchvision
 boto3
