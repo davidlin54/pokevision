@@ -1,9 +1,12 @@
+import io
 import os
 import config
 import json
 import sys
 import torch
 import time
+import base64
+import boto3
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from vision_model import PokemonClassifier
@@ -14,7 +17,7 @@ from PIL import Image
 # === Config ===
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def main(image_path: str):
+def eval(image: Image):
     with open(config.model_classes, "r") as f:
         class_names = json.load(f)
 
@@ -26,7 +29,6 @@ def main(image_path: str):
                              std=[0.229, 0.224, 0.225]),
     ])
 
-    image = Image.open(image_path).convert('RGB')
     input_tensor = transform(image).unsqueeze(0).to(device)
 
     torch.set_float32_matmul_precision('high')
@@ -48,8 +50,21 @@ def main(image_path: str):
 
     top_k_class_names = [class_names[index.item()] for index in top_k_indices[0]]
 
-    return top_k_class_names, [prob.item() for prob in top_k_prob[0]]
+    return list(zip(top_k_class_names, [prob.item() for prob in top_k_prob[0]]))
 
-if __name__ == "__main__":
-    image_path = sys.argv[1]
-    print(main(image_path))
+def handler(event, context):
+    bucket = os.getenv('S3_MODEL_BUCKET')
+    s3 = boto3.client('s3')
+    # === Load classes and checkpoint
+    s3.download_file(bucket, config.model_classes, config.model_checkpoint)
+    s3.download_file(bucket, config.model_checkpoint, config.model_checkpoint)
+    try:
+        image_bytes = base64.b64decode(event['image_data'])
+        image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+    except Exception as e:
+        return {"error": f"Failed to decode image: {str(e)}"}
+    
+    predictions = eval(image)
+    return {
+        "predictions": predictions
+    }
