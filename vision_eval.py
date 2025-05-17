@@ -6,7 +6,6 @@ import sys
 import torch
 import time
 import base64
-import boto3
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from vision_model import PokemonClassifier
@@ -53,11 +52,6 @@ def eval(image: Image):
     return list(zip(top_k_class_names, [prob.item() for prob in top_k_prob[0]]))
 
 def handler(event, context):
-    bucket = os.getenv('S3_MODEL_BUCKET')
-    s3 = boto3.client('s3')
-    # === Load classes and checkpoint
-    s3.download_file(bucket, config.model_classes, config.model_checkpoint)
-    s3.download_file(bucket, config.model_checkpoint, config.model_checkpoint)
     try:
         image_bytes = base64.b64decode(event['image_data'])
         image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
