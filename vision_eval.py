@@ -33,7 +33,7 @@ def eval(image: Image):
     torch.set_float32_matmul_precision('high')
 
     # === Model ===
-    model = PokemonClassifier(num_classes=len(class_names)).to(device)
+    model = PokemonClassifier(num_classes=len(class_names), weights=None).to(device)
 
     # === Load saved state and run inference ===
     model.load_state_dict(torch.load(config.model_checkpoint, map_location="cpu"))
