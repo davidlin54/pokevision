@@ -3,7 +3,7 @@ import torch.nn as nn
 import torchvision.models as models
 
 class PokemonClassifier(nn.Module):
-    def __init__(self, num_classes, weights=ResNet18_Weights.IMAGENET1K_V1):
+    def __init__(self, num_classes, weights=models.ResNet18_Weights.IMAGENET1K_V1):
         super(PokemonClassifier, self).__init__()
 
         # Pre-trained ResNet18 model
