@@ -36,7 +36,7 @@ def eval(image: Image):
     model = PokemonClassifier(num_classes=len(class_names)).to(device)
 
     # === Load saved state and run inference ===
-    model.load_state_dict(torch.load(config.model_checkpoint))
+    model.load_state_dict(torch.load(config.model_checkpoint, map_location="cpu"))
 
     model.eval()
     with torch.no_grad():
