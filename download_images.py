@@ -65,11 +65,11 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
     # if image_count < config.max_images_per_item:
     #     prompt = '\"' + set.name + '\"' + ' ' + item.name
 
-    #     for num, image_url in enumerate(get_image_urls_from_ddg(prompt, config.max_images_per_item - image_count), 1):
+    #     for image_url in get_image_urls_from_ddg(prompt, config.max_images_per_item - image_count):
     #         try: 
     #             content = fetch_image_from_url(image_url)
 
-    #             image_name = 'supplementary' + str(num)
+    #             image_name = str(hash(image_url))
     #             extension = image_url.split('.')[-1]
 
     #             file_name = image_name + '.' + extension

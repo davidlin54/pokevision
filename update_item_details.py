@@ -16,8 +16,11 @@ async def update_sets_and_items():
 
     with tqdm_async(total=len(tasks)) as progress_bar:
         for coro in asyncio.as_completed(tasks):
-            items = await coro
-            insert_items(items)
+            try:
+                items = await coro
+                insert_items(items)
+            except Exception as e:
+                print(f"Exception getting items from set: {e}")
             progress_bar.update(1)
 
 async def update_item_details_into_db():
@@ -28,10 +31,13 @@ async def update_item_details_into_db():
 
     with tqdm_async(total=len(tasks)) as progress_bar:
         for coro in asyncio.as_completed(tasks):
-            item_detail = await coro
-            if item_detail:
-                with lock:
-                    items_details.append(item_detail)
+            try:
+                item_detail = await coro
+                if item_detail:
+                    with lock:
+                        items_details.append(item_detail)
+            except Exception as e:
+                print(f"Exception getting items from set: {e}")
             progress_bar.update(1)
 
     insert_item_details(items_details)
