@@ -191,6 +191,10 @@ def get_image_url_from_ebay(ebay_url: str) -> str:
 
             soup = BeautifulSoup(response, 'html.parser')
 
+            error = soup.find('div', class_='error-page-v2')
+            if error:
+                return None
+
             # high def images
             # div = soup.find('div', class_='ux-image-carousel-container image-container')
             # if div:

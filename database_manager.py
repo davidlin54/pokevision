@@ -180,6 +180,23 @@ def get_sets_from_db() -> list[Set]:
 
     return sets
 
+def get_set_from_db(s_id: str) -> Set:
+    connector = get_connector(db_name)
+    cursor = connector.cursor()
+
+    cursor.execute(
+        "SELECT id, name, url " + 
+        "FROM " + set_table + " where id=" + str(s_id))
+
+    sets = []
+    for (id, name, url) in cursor:
+        sets.append(Set(id, name, url))    
+
+    cursor.close()
+    connector.close()
+
+    return sets[0]
+
 def get_set_count() -> int:
     connector = get_connector(db_name)
     cursor = connector.cursor()
