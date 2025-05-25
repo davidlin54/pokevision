@@ -5,4 +5,6 @@ image_size = 224
 model_checkpoint = 'trained_model.data'
 model_classes = 'classes.json'
 return_k_results = 5
-max_images_per_item = 10
+max_images_per_item = 20
+max_ddg_images = 3
+max_ebay_search_images = 10

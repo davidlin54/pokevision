@@ -7,6 +7,7 @@ from set import Set
 from item import Item
 from item_details import ItemDetails
 from duckduckgo_search import DDGS
+from urllib.parse import quote
 
 base_url = 'https://www.pricecharting.com'
 category_path = '/category/pokemon-cards'
@@ -207,6 +208,31 @@ def get_image_url_from_ebay(ebay_url: str) -> str:
                     return image.get('src')
         except:
             print('retry number ' + str(attempt) + ' for image url from ebay url: ' + ebay_url)
+
+def search_ebay_for_item(item: Item, set: Set, max_results: int = 1000) -> list[str]:
+    keyword = set.name + ' ' + item.name
+    ebay_url = f"https://www.ebay.ca/sch/i.html?_nkw={quote(keyword)}"
+    for attempt in range(1, max_retry):
+        try:
+            result = []
+            response = get_post_response(ebay_url, timeout_sec)
+
+            soup = BeautifulSoup(response, 'html.parser')
+
+            h1 = soup.find('h1', class_='srp-controls__count-heading')
+            count = min(int(h1.find('span', class_='BOLD').get_text()), max_results)
+
+            image_divs = soup.find('div', class_='srp-river-results clearfix').find_all('div', class_='s-item__image-wrapper image-treatment')
+
+            for image_div in image_divs[:count]:
+                image_url = image_div.find('img').get('src').replace('l500', 'l140')
+                result.append(image_url)
+
+            return result
+        except:
+            print('retry number ' + str(attempt) + ' for ebay search url: ' + ebay_url)
+
+    return []
 
 def fetch_image_from_url(image_url: str) -> bytes:
     for attempt in range(1, max_retry):

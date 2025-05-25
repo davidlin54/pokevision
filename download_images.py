@@ -6,7 +6,12 @@ from filesystem_manager import *
 from tqdm.asyncio import tqdm as tqdm_async
 from tqdm import tqdm as tqdm
 import asyncio
+import hashlib
 import config
+
+def string_to_filename_hash(s):
+    # Use SHA-256 for strong, consistent hashing
+    return hashlib.sha256(s.encode()).hexdigest()
 
 def save_image_to_file(filesystem_manager: FilesystemManager, content: bytes, file_name: str, item: Item) -> bool:
     staging_file_path = filesystem_manager.get_dir_for_item(config.staging_dir, item) + file_name
@@ -32,10 +37,10 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
         try:
             content = fetch_image_from_url(image_url)
 
-            pc_image_id = image_url.split('/')[-2]
+            image_name = string_to_filename_hash(image_url)
             extension = image_url.split('.')[-1]
 
-            file_name = pc_image_id + '.' + extension
+            file_name = image_name + '.' + extension
             saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
 
             if saved_to_file:
@@ -50,10 +55,10 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
             if image_url:
                 content = fetch_image_from_url(image_url)
 
-                ebay_id = url.split('/')[-1]
+                image_name = string_to_filename_hash(image_url)
                 extension = image_url.split('.')[-1]
 
-                file_name = ebay_id + '.' + extension
+                file_name = image_name + '.' + extension
                 saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
 
                 if saved_to_file:
@@ -61,24 +66,42 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
         except Exception as e:
             print("failed to download " + str(image_url) + ". " + str(e))
 
+    # search ebay for item
+    if image_count < config.max_images_per_item:
+        image_urls = search_ebay_for_item(item, set, config.max_ebay_search_images)
+        for image_url in image_urls:
+            try: 
+                content = fetch_image_from_url(image_url)
+
+                image_name = string_to_filename_hash(image_url)
+                extension = image_url.split('.')[-1]
+
+                file_name = image_name + '.' + extension
+                saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
+
+                if saved_to_file:
+                    image_count += 1
+            except Exception as e:
+                print("failed to download " + str(image_url) + ". " + str(e))
+
     # supplement images with duckduckgo images top results
-    # if image_count < config.max_images_per_item:
-    #     prompt = '\"' + set.name + '\"' + ' ' + item.name
+    if image_count < config.max_images_per_item:
+        prompt = '\"' + set.name + '\"' + ' ' + item.name
 
-    #     for image_url in get_image_urls_from_ddg(prompt, config.max_images_per_item - image_count):
-    #         try: 
-    #             content = fetch_image_from_url(image_url)
+        for image_url in get_image_urls_from_ddg(prompt, min(config.max_images_per_item - image_count, config.max_ddg_images)):
+            try: 
+                content = fetch_image_from_url(image_url)
 
-    #             image_name = str(hash(image_url))
-    #             extension = image_url.split('.')[-1]
+                image_name = str(hash(image_url))
+                extension = image_url.split('.')[-1]
 
-    #             file_name = image_name + '.' + extension
-    #             saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
+                file_name = image_name + '.' + extension
+                saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
 
-    #             if saved_to_file:
-    #                 image_count += 1
-    #         except Exception as e:
-    #             print("failed to download " + str(image_url) + ". " + str(e))
+                if saved_to_file:
+                    image_count += 1
+            except Exception as e:
+                print("failed to download " + str(image_url) + ". " + str(e))
 
 
 async def download_images_and_save(filesystem_manager: FilesystemManager, start_set: int=1):
@@ -94,8 +117,5 @@ async def download_images_and_save(filesystem_manager: FilesystemManager, start_
                 progress_bar.update(1)
 
 if __name__ == "__main__":
-    # asyncio.run(download_images_and_save(FilesystemManager.get_implementation()))
-    set = get_all_sets()[0]
-    items = get_items_from_db(1)
-    download_item_images_and_save(FilesystemManager.get_implementation(), items[0], set)
+    asyncio.run(download_images_and_save(FilesystemManager.get_implementation()))
 
