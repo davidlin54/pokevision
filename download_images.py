@@ -13,7 +13,13 @@ def string_to_filename_hash(s):
     # Use SHA-256 for strong, consistent hashing
     return hashlib.sha256(s.encode()).hexdigest()
 
-def save_image_to_file(filesystem_manager: FilesystemManager, content: bytes, file_name: str, item: Item) -> bool:
+def save_image_to_file(filesystem_manager: FilesystemManager, image_url: str, item: Item) -> bool:
+    content = fetch_image_from_url(image_url)
+
+    image_name = string_to_filename_hash(image_url)
+    extension = image_url.split('.')[-1]
+
+    file_name = image_name + '.' + extension
     staging_file_path = filesystem_manager.get_dir_for_item(config.staging_dir, item) + file_name
     training_file_path = filesystem_manager.get_dir_for_item(config.training_dir, item) + file_name
     val_file_path = filesystem_manager.get_dir_for_item(config.val_dir, item) + file_name
@@ -35,13 +41,7 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
 
     for image_url in pc_image_urls:
         try:
-            content = fetch_image_from_url(image_url)
-
-            image_name = string_to_filename_hash(image_url)
-            extension = image_url.split('.')[-1]
-
-            file_name = image_name + '.' + extension
-            saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
+            saved_to_file = save_image_to_file(filesystem_manager, image_url, item)
 
             if saved_to_file:
                 image_count += 1
@@ -53,13 +53,7 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
             image_url = get_image_url_from_ebay(url)
 
             if image_url:
-                content = fetch_image_from_url(image_url)
-
-                image_name = string_to_filename_hash(image_url)
-                extension = image_url.split('.')[-1]
-
-                file_name = image_name + '.' + extension
-                saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
+                saved_to_file = save_image_to_file(filesystem_manager, image_url, item)
 
                 if saved_to_file:
                     image_count += 1
@@ -71,13 +65,7 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
         image_urls = search_ebay_for_item(item, set, config.max_ebay_search_images)
         for image_url in image_urls:
             try: 
-                content = fetch_image_from_url(image_url)
-
-                image_name = string_to_filename_hash(image_url)
-                extension = image_url.split('.')[-1]
-
-                file_name = image_name + '.' + extension
-                saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
+                saved_to_file = save_image_to_file(filesystem_manager, image_url, item)
 
                 if saved_to_file:
                     image_count += 1
@@ -90,13 +78,7 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
 
         for image_url in get_image_urls_from_ddg(prompt, min(config.max_images_per_item - image_count, config.max_ddg_images)):
             try: 
-                content = fetch_image_from_url(image_url)
-
-                image_name = str(hash(image_url))
-                extension = image_url.split('.')[-1]
-
-                file_name = image_name + '.' + extension
-                saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
+                saved_to_file = save_image_to_file(filesystem_manager, image_url, item)
 
                 if saved_to_file:
                     image_count += 1
@@ -117,5 +99,9 @@ async def download_images_and_save(filesystem_manager: FilesystemManager, start_
                 progress_bar.update(1)
 
 if __name__ == "__main__":
-    asyncio.run(download_images_and_save(FilesystemManager.get_implementation()))
+    filesystem_manager = FilesystemManager.get_implementation()
+    filesystem_manager.create_dir(config.staging_dir)
+    filesystem_manager.create_dir(config.training_dir)
+    filesystem_manager.create_dir(config.val_dir)
+    asyncio.run(download_images_and_save(filesystem_manager))
 
