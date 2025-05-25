@@ -84,6 +84,11 @@ def main():
                 _, preds = torch.max(outputs, 1)
                 val_correct += (preds == labels).sum().item()
                 val_total += labels.size(0)
+
+                wrong_indices = preds != labels
+                wrong_labels = labels[wrong_indices]
+                print(wrong_labels)
+
         best_val_loss = val_loss
 
         print(f'loaded saved state with val loss {best_val_loss: .4f}')

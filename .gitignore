@@ -4,5 +4,6 @@
 **/[0-9]*/
 **/logs/
 **/*.out
-*.pth
+*.data
 classes.json
+playground/

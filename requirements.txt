@@ -7,3 +7,4 @@ tqdm
 torch
 torchvision
 boto3
+duckduckgo-search

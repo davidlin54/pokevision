@@ -12,7 +12,12 @@ class FilesystemManager(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_dir_for_item(item: Item) -> str:
+    def create_dirs_for_item(item: Item):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_dir_for_item(directory: str, item: Item) -> str:
         pass
 
     @staticmethod
@@ -23,6 +28,16 @@ class FilesystemManager(ABC):
     @staticmethod
     @abstractmethod
     def file_exists(file_name: str):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def file_exists_in_all_folders(file_name: str):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_num_images_for_item(item: Item) -> int:
         pass
 
     @staticmethod

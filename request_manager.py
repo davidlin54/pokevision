@@ -1,9 +1,12 @@
 import requests
 import re
+import os
+import dotenv
 from bs4 import BeautifulSoup
 from set import Set
 from item import Item
 from item_details import ItemDetails
+from duckduckgo_search import DDGS
 
 base_url = 'https://www.pricecharting.com'
 category_path = '/category/pokemon-cards'
@@ -195,7 +198,9 @@ def get_image_url_from_ebay(ebay_url: str) -> str:
             #         return image.get('data-zoom-src')
 
             # low def images
-            button = soup.find('button', class_='ux-image-grid-item image-treatment rounded-edges active')
+            div = soup.find('div', class_='center-panel-container vi-mast')
+            button = div.find('button', class_='ux-image-grid-item image-treatment rounded-edges active')
+
             if button:
                 image = button.find('img')
                 if image:
@@ -214,3 +219,19 @@ def fetch_image_from_url(image_url: str) -> bytes:
                 print(f"Failed to download image. Status code: {response.status_code}")
         except:
             print('retry number ' + str(attempt) + ' for downloading image: ' + image_url)
+
+def get_image_urls_from_ddg(prompt: str, images_requested: int) -> list[str]:
+    # Search for images
+    for attempt in range(1, max_retry):
+        try:
+            dotenv.load_dotenv()
+            proxy = os.getenv('proxy_server')
+            results = DDGS(proxy=proxy, timeout=20).images(keywords=prompt, max_results=images_requested)
+
+            # Extract image URLs
+            image_urls = [r["image"] for r in results]
+
+            return image_urls
+        except Exception as e:
+            print(f"An error occured using duckduckgo_search: {e}")
+    return []

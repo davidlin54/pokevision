@@ -6,8 +6,26 @@ from filesystem_manager import *
 from tqdm.asyncio import tqdm as tqdm_async
 from tqdm import tqdm as tqdm
 import asyncio
+import config
 
-def download_item_images_and_save(filesystem_manager: FilesystemManager, item: Item):
+def save_image_to_file(filesystem_manager: FilesystemManager, content: bytes, file_name: str, item: Item) -> bool:
+    staging_file_path = filesystem_manager.get_dir_for_item(config.staging_dir, item) + file_name
+    training_file_path = filesystem_manager.get_dir_for_item(config.training_dir, item) + file_name
+    val_file_path = filesystem_manager.get_dir_for_item(config.val_dir, item) + file_name
+
+    if not filesystem_manager.file_exists(staging_file_path) and not filesystem_manager.file_exists(training_file_path) and not filesystem_manager.file_exists(val_file_path):
+        filesystem_manager.save_image_to_file(content, staging_file_path)
+        return True
+
+    return False
+
+def download_item_images_and_save(filesystem_manager: FilesystemManager, item: Item, set: Set):
+    filesystem_manager.create_dirs_for_item(item)
+    image_count = filesystem_manager.get_num_images_for_item(item)
+
+    if (image_count > config.max_images_per_item):
+        return
+
     pc_image_urls = get_image_urls_from_item(item)
 
     for image_url in pc_image_urls:
@@ -17,10 +35,11 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
             pc_image_id = image_url.split('/')[-2]
             extension = image_url.split('.')[-1]
 
-            file_path = filesystem_manager.get_dir_for_item(item) + pc_image_id + '.' + extension
+            file_name = pc_image_id + '.' + extension
+            saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
 
-            if not filesystem_manager.file_exists(file_path):
-                filesystem_manager.save_image_to_file(content, file_path)
+            if saved_to_file:
+                image_count += 1
         except Exception as e:
             print("failed to download " + str(image_url) + ". " + str(e))
 
@@ -34,19 +53,39 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
                 ebay_id = url.split('/')[-1]
                 extension = image_url.split('.')[-1]
 
-                file_path = filesystem_manager.get_dir_for_item(item) + ebay_id + '.' + extension
-                
-                if not filesystem_manager.file_exists(file_path):
-                    filesystem_manager.save_image_to_file(content, file_path)
+                file_name = ebay_id + '.' + extension
+                saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
+
+                if saved_to_file:
+                    image_count += 1
         except Exception as e:
             print("failed to download " + str(image_url) + ". " + str(e))
+
+    # supplement images with duckduckgo images top results
+    # if image_count < config.max_images_per_item:
+    #     prompt = '\"' + set.name + '\"' + ' ' + item.name
+
+    #     for num, image_url in enumerate(get_image_urls_from_ddg(prompt, config.max_images_per_item - image_count), 1):
+    #         try: 
+    #             content = fetch_image_from_url(image_url)
+
+    #             image_name = 'supplementary' + str(num)
+    #             extension = image_url.split('.')[-1]
+
+    #             file_name = image_name + '.' + extension
+    #             saved_to_file = save_image_to_file(filesystem_manager, content, file_name, item)
+
+    #             if saved_to_file:
+    #                 image_count += 1
+    #         except Exception as e:
+    #             print("failed to download " + str(image_url) + ". " + str(e))
 
 
 async def download_images_and_save(filesystem_manager: FilesystemManager, start_set: int=1):
     for set in range(start_set, get_set_count() + 1):
         items = get_items_from_db(set)
 
-        tasks = [asyncio.to_thread(download_item_images_and_save, filesystem_manager, item) for item in items]
+        tasks = [asyncio.to_thread(download_item_images_and_save, filesystem_manager, item, set) for item in items]
 
         print('working on set: ' + str(set))
         with tqdm_async(total=len(tasks)) as progress_bar:
@@ -55,5 +94,8 @@ async def download_images_and_save(filesystem_manager: FilesystemManager, start_
                 progress_bar.update(1)
 
 if __name__ == "__main__":
-    asyncio.run(download_images_and_save(FilesystemManager.get_implementation()))
+    # asyncio.run(download_images_and_save(FilesystemManager.get_implementation()))
+    set = get_all_sets()[0]
+    items = get_items_from_db(1)
+    download_item_images_and_save(FilesystemManager.get_implementation(), items[0], set)
 

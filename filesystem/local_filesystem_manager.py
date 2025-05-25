@@ -13,8 +13,15 @@ class LocalFilesystemManager(FilesystemManager):
         Path(path).mkdir(parents=True, exist_ok=True)
 
     @staticmethod   
-    def get_dir_for_item(item: Item) -> str:
-        return config.staging_dir + '/' + str(item.id) + '/'
+    def create_dirs_for_item(item: Item):
+        item_relative_path = '/' + str(item.id)
+        LocalFilesystemManager.create_dir(config.staging_dir + item_relative_path)
+        LocalFilesystemManager.create_dir(config.training_dir + item_relative_path)
+        LocalFilesystemManager.create_dir(config.val_dir + item_relative_path)
+
+    @staticmethod   
+    def get_dir_for_item(directory: str, item: Item) -> str:
+        return directory + '/' + str(item.id) + '/'
 
     @staticmethod
     def save_image_to_file(content: bytes, file_name: str):
@@ -25,6 +32,18 @@ class LocalFilesystemManager(FilesystemManager):
     def file_exists(file_name: str):
         file_path = Path(file_name)
         return file_path.exists()
+
+    @staticmethod
+    def get_num_images_for_item(item: Item) -> int:
+        item_relative_path = '/' + str(item.id)
+
+        staging_path = Path(config.staging_dir + item_relative_path)
+        training_path = Path(config.training_dir + item_relative_path)
+        val_path = Path(config.val_dir + item_relative_path)
+
+        images_count = sum(1 for p in staging_path.iterdir() if p.is_file()) + sum(1 for p in training_path.iterdir() if p.is_file()) + sum(1 for p in val_path.iterdir() if p.is_file())
+
+        return images_count
 
     @staticmethod
     def split_dataset(staging_dir: str, training_dir: str, val_dir: str, val_ratio: float):
