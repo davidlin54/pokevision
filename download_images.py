@@ -8,6 +8,7 @@ from tqdm import tqdm as tqdm
 import asyncio
 import hashlib
 import config
+import sys
 
 def string_to_filename_hash(s):
     # Use SHA-256 for strong, consistent hashing
@@ -49,7 +50,7 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
         except Exception as e:
             print("failed to download " + str(image_url) + ". " + str(e))
 
-    for url in get_ebay_links_from_item(item)[:config.max_images_per_item]:
+    for url in get_ebay_links_from_item(item)[:config.max_images_per_item + 1]:
         try:
             image_url = get_image_url_from_ebay(url)
 
@@ -74,10 +75,10 @@ def download_item_images_and_save(filesystem_manager: FilesystemManager, item: I
                 print("failed to download " + str(image_url) + ". " + str(e))
 
     # supplement images with duckduckgo images top results
-    if image_count < config.max_images_per_item:
+    if image_count < config.min_images_per_item:
         prompt = '\"' + set.name + '\"' + ' ' + item.name
 
-        for image_url in get_image_urls_from_ddg(prompt, min(config.max_images_per_item - image_count, config.max_ddg_images)):
+        for image_url in get_image_urls_from_ddg(prompt, config.max_ddg_images):
             try: 
                 saved_to_file = save_image_to_file(filesystem_manager, image_url, item)
 
@@ -94,8 +95,7 @@ async def download_images_and_save(filesystem_manager: FilesystemManager, start_
 
         tasks = [asyncio.to_thread(download_item_images_and_save, filesystem_manager, item, set) for item in items]
 
-        print('working on set: ' + str(set_id))
-        with tqdm_async(total=len(tasks)) as progress_bar:
+        with tqdm_async(total=len(tasks), desc='working on set: ' + str(set_id)) as progress_bar:
             for coro in asyncio.as_completed(tasks):
                 try:
                     await coro
@@ -104,9 +104,11 @@ async def download_images_and_save(filesystem_manager: FilesystemManager, start_
                 progress_bar.update(1)
 
 if __name__ == "__main__":
+    log_file = open('output.log', 'w')
+    sys.stdout = log_file
     filesystem_manager = FilesystemManager.get_implementation()
     filesystem_manager.create_dir(config.staging_dir)
     filesystem_manager.create_dir(config.training_dir)
     filesystem_manager.create_dir(config.val_dir)
-    asyncio.run(download_images_and_save(filesystem_manager))
+    asyncio.run(download_images_and_save(filesystem_manager, 1))
 

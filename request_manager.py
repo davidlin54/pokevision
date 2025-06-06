@@ -1,6 +1,7 @@
 import requests
 import re
 import os
+import sys
 import dotenv
 from bs4 import BeautifulSoup
 from set import Set
@@ -15,13 +16,17 @@ headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
 max_retry = 5
 timeout_sec = 10
 
-def get_post_response(url: str, timeout: int=1000):
-    response = requests.post(url, headers=headers, timeout=timeout)
+def get_post_response(url: str, timeout: int=1000, stream: bool=False):
+    response = requests.post(url, headers=headers, timeout=timeout, stream=stream)
+    return response
+
+def get_post_response_body(url: str, timeout: int=1000):
+    response = get_post_response(url, timeout, False)
     body = response.text
     return body
 
 def get_all_sets() -> list[Set]:
-    base_response = get_post_response(base_url + category_path)
+    base_response = get_post_response_body(base_url + category_path)
     soup = BeautifulSoup(base_response, 'html.parser')
 
     result = []
@@ -52,7 +57,7 @@ def get_all_sets() -> list[Set]:
 
 
 def get_items_from_set(set: Set, cursor: int=None) -> list[str]:
-    response = get_post_response(set.url + ('' if cursor is None else '?cursor=' + str(cursor)))
+    response = get_post_response_body(set.url + ('' if cursor is None else '?cursor=' + str(cursor)))
 
     soup = BeautifulSoup(response, 'html.parser')
     target_table = soup.find('table', class_='hoverable-rows', id='games_table').find('tbody')
@@ -80,7 +85,7 @@ def strip_price_string(price: str) -> float:
 def get_item_details_from_item(item : Item) -> ItemDetails:
     for attempt in range(1, max_retry):
         try:
-            response = get_post_response(item.url, timeout_sec)
+            response = get_post_response_body(item.url, timeout_sec)
 
             soup = BeautifulSoup(response, 'html.parser')
             details = ItemDetails(item_id=item.id)
@@ -148,7 +153,7 @@ def get_item_details_from_item(item : Item) -> ItemDetails:
 def get_ebay_links_from_item(item: Item) -> list[str]:
     for attempt in range(1, max_retry):
         try:
-            response = get_post_response(item.url, timeout_sec)
+            response = get_post_response_body(item.url, timeout_sec)
 
             soup = BeautifulSoup(response, 'html.parser')
             ebay_elements = soup.find_all('a', target='_blank', class_='js-ebay-completed-sale')
@@ -168,7 +173,7 @@ def get_ebay_links_from_item(item: Item) -> list[str]:
 def get_image_urls_from_item(item: Item) -> list[str]:
     for attempt in range(1, max_retry):
         try:
-            response = get_post_response(item.url, timeout_sec)
+            response = get_post_response_body(item.url, timeout_sec)
 
             soup = BeautifulSoup(response, 'html.parser')
             extra_images = soup.find('div', id='extra-images')
@@ -184,42 +189,49 @@ def get_image_urls_from_item(item: Item) -> list[str]:
 
     return []
 
+def format_ebay_image_url(original_url: str) -> str:
+    new_url = re.sub(r's-l\d+\.(jpg|jpeg|webp|png)', 's-l225.webp', original_url)
+    return new_url
+
 def get_image_url_from_ebay(ebay_url: str) -> str:
     for attempt in range(1, max_retry):
         try:
-            response = get_post_response(ebay_url, timeout_sec)
+            response = get_post_response(ebay_url, timeout_sec, True)
+            response.raise_for_status()
 
-            soup = BeautifulSoup(response, 'html.parser')
+            # Accumulate chunks until we reach the end of </head> tag
+            chunks = []
+            for chunk in response.iter_content(chunk_size=512, decode_unicode=True):
+                chunks.append(chunk)
+                html_so_far = ''.join(chunks)
+                if '</head>' in html_so_far.lower():
+                    break
+            response.close()
+
+            soup = BeautifulSoup(html_so_far, 'html.parser')
 
             error = soup.find('div', class_='error-page-v2')
             if error:
                 return None
 
-            # high def images
-            # div = soup.find('div', class_='ux-image-carousel-container image-container')
-            # if div:
-            #     image = div.find('img', loading='eager', fetchpriority='high')
-            #     if image:
-            #         return image.get('data-zoom-src')
+            og_image = soup.find("meta", property="og:image")
 
-            # low def images
-            div = soup.find('div', class_='center-panel-container vi-mast')
-            button = div.find('button', class_='ux-image-grid-item image-treatment rounded-edges active')
-
-            if button:
-                image = button.find('img')
-                if image:
-                    return image.get('src')
-        except:
-            print('retry number ' + str(attempt) + ' for image url from ebay url: ' + ebay_url)
+            if og_image and og_image.get("content"):
+                original_url = og_image["content"]
+                return format_ebay_image_url(original_url)
+        except Exception as e:
+            print('retry number ' + str(attempt) + ' for image url from ebay url: ' + ebay_url + '. with error' + str(e))
 
 def search_ebay_for_item(item: Item, set: Set, max_results: int = 1000) -> list[str]:
-    keyword = set.name + ' ' + item.name
-    ebay_url = f"https://www.ebay.ca/sch/i.html?_nkw={quote(keyword)}"
+    keyword = '\"' + set.name.replace("Pokemon ", "") + '\" \"' + item.name.replace('[', '').replace(']', '') + '\"'
+    keyword = re.sub(r'\b(19|20)\d{2}\b', '', keyword)
+
+    # limit 240 and search best match first
+    ebay_url = f"https://www.ebay.ca/sch/i.html?_nkw={quote(keyword)}&_ipg=240&_sop=12"
     for attempt in range(1, max_retry):
         try:
             result = []
-            response = get_post_response(ebay_url, timeout_sec)
+            response = get_post_response_body(ebay_url, timeout_sec)
 
             soup = BeautifulSoup(response, 'html.parser')
 
@@ -229,12 +241,13 @@ def search_ebay_for_item(item: Item, set: Set, max_results: int = 1000) -> list[
             image_divs = soup.find('div', class_='srp-river-results clearfix').find_all('div', class_='s-item__image-wrapper image-treatment')
 
             for image_div in image_divs[:count]:
-                image_url = image_div.find('img').get('src').replace('l500', 'l140')
+                image_url = image_div.find('img').get('src')
+                image_url = format_ebay_image_url(image_url)
                 result.append(image_url)
 
             return result
-        except:
-            print('retry number ' + str(attempt) + ' for ebay search url: ' + ebay_url)
+        except Exception as e:
+            print('retry number ' + str(attempt) + ' for ebay search url: ' + ebay_url + '. with error' + str(e))
 
     return []
 

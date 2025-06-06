@@ -44,4 +44,4 @@ async def update_item_details_into_db():
 
 if __name__ == "__main__":
     asyncio.run(update_sets_and_items())
-    asyncio.run(update_item_details_into_db())
+    # asyncio.run(update_item_details_into_db())

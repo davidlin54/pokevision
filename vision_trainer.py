@@ -20,7 +20,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # === Early Stopping Setup ===
 best_val_loss = float('inf')
 patience = 5
-no_improve_epochs=0
 
 def count_subfolders(path) -> int:
     return sum(
@@ -28,7 +27,7 @@ def count_subfolders(path) -> int:
         for entry in os.listdir(path)
     )
 
-def load_state_dict(model):
+def load_state_dict(model, train_dataset):
     saved_state_dict = torch.load(config.model_checkpoint)
     new_state_dict = model.state_dict()
 
@@ -37,6 +36,31 @@ def load_state_dict(model):
 
     # Update the new model's state_dict with matched keys
     new_state_dict.update(matched_state_dict)
+
+    # Load the old and new class name lists
+    with open(config.model_classes) as f:
+        old_classnames = json.load(f)  # From saved checkpoint
+    new_classnames = train_dataset.classes  # Current training classes
+
+    # Build index mapping: old index -> new index
+    old_to_new_index = {
+        old_idx: new_classnames.index(cls_name)
+        for old_idx, cls_name in enumerate(old_classnames)
+        if cls_name in new_classnames
+    }
+
+    # Load partial state dict
+    if 'fc.weight' in saved_state_dict and 'fc.bias' in saved_state_dict:
+        old_fc_weight = saved_state_dict['fc.weight']
+        old_fc_bias = saved_state_dict['fc.bias']
+        new_fc_weight = new_state_dict['fc.weight']
+        new_fc_bias = new_state_dict['fc.bias']
+
+        with torch.no_grad():
+            for old_idx, new_idx in old_to_new_index.items():
+                new_fc_weight[new_idx] = old_fc_weight[old_idx]
+                new_fc_bias[new_idx] = old_fc_bias[old_idx]
+
 
     # Load the updated state_dict into the new model
     model.load_state_dict(new_state_dict)
@@ -70,7 +94,7 @@ def main():
 
     # === Load saved state and run validation for current loss ===
     try:
-        load_state_dict(model)
+        load_state_dict(model, train_dataset)
 
         model.eval()
         val_loss, val_correct, val_total = 0, 0, 0
@@ -87,7 +111,6 @@ def main():
 
                 wrong_indices = preds != labels
                 wrong_labels = labels[wrong_indices]
-                print(wrong_labels)
 
         best_val_loss = val_loss
 
@@ -96,6 +119,7 @@ def main():
         print('no saved model found. ' + str(e))
     # model = torch.compile(model)
 
+    no_improve_epochs=0
     # === Training Loop ===
     for epoch in range(epochs):
         model.train()
